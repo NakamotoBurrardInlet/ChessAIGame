@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURELIA CHESS — Sovereign AI & Algorithmic Grandmaster Suite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-obsidian: #0b0c10;
+      --panel-obsidian: #12141c;
+      --panel-elevated: #191c26;
+      --gold-primary: #d4af37;
+      --gold-bright: #f3d06b;
+      --gold-dim: #8c7021;
+      --border-subtle: rgba(212, 175, 55, 0.22);
+
+      /* Default Board Theme: Royal Walnut & Ivory */
+      --sq-light: #e8dcc4;
+      --sq-dark: #6e472b;
+      --sq-light-coord: #6e472b;
+      --sq-dark-coord: #e8dcc4;
+      --board-frame: linear-gradient(145deg, #3c2415, #1d1008);
+    }
+
+    body[data-theme="obsidian"] {
+      --sq-light: #9ca3af;
+      --sq-dark: #1f2430;
+      --sq-light-coord: #1f2430;
+      --sq-dark-coord: #d4af37;
+      --board-frame: linear-gradient(145deg, #252834, #0d0f14);
+    }
+
+    body[data-theme="emerald"] {
+      --sq-light: #e6ebe0;
+      --sq-dark: #285943;
+      --sq-light-coord: #285943;
+      --sq-dark-coord: #e6ebe0;
+      --board-frame: linear-gradient(145deg, #1a3b2c, #0c1f17);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-obsidian);
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(212, 175, 55, 0.08), transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(120, 82, 255, 0.06), transparent 45%),
+        linear-gradient(180deg, #090a0e 0%, #10131c 100%);
+      color: #f3f4f6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .font-royal {
+      font-family: 'Cinzel', serif;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Luxury Glass & Gold Borders */
+    .luxury-panel {
+      background: linear-gradient(165deg, rgba(24, 27, 38, 0.94), rgba(14, 16, 23, 0.97));
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+    }
+
+    .gold-btn {
+      background: linear-gradient(135deg, #d4af37 0%, #b58d22 50%, #967115 100%);
+      color: #0b0c10;
+      font-weight: 700;
+      border: 1px solid #f5da81;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .gold-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(212, 175, 55, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      filter: brightness(1.06);
+    }
+
+    .gold-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .obsidian-btn {
+      background: linear-gradient(180deg, #222634 0%, #161923 100%);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      color: #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .obsidian-btn:hover:not(:disabled) {
+      border-color: var(--gold-primary);
+      color: var(--gold-bright);
+      background: linear-gradient(180deg, #2a2f40 0%, #1b1f2b 100%);
+    }
+
+    /* Chessboard Architectural Frame */
+    .board-outer-frame {
+      background: var(--board-frame);
+      padding: clamp(10px, 2vw, 18px);
+      border-radius: 16px;
+      border: 2px solid rgba(212, 175, 55, 0.45);
+      box-shadow:
+        0 25px 65px rgba(0, 0, 0, 0.85),
+        0 0 0 1px rgba(0, 0, 0, 0.9),
+        inset 0 0 24px rgba(0, 0, 0, 0.75);
+      position: relative;
+    }
+
+    .board-inner-bevel {
+      border: 2px solid rgba(212, 175, 55, 0.55);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      position: relative;
+    }
+
+    .chess-square {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: filter 0.15s ease;
+    }
+
+    .sq-light {
+      background-color: var(--sq-light);
+      color: var(--sq-light-coord);
+    }
+
+    .sq-dark {
+      background-color: var(--sq-dark);
+      color: var(--sq-dark-coord);
+    }
+
+    /* Square Highlights */
+    .sq-selected::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(212, 175, 55, 0.48);
+      box-shadow: inset 0 0 12px rgba(255, 223, 100, 0.8);
+      pointer-events: none;
+    }
+
+    .sq-last-move::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(245, 197, 66, 0.28);
+      pointer-events: none;
+    }
+
+    .sq-hint::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border: 3px dashed #38bdf8;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.2);
+      animation: pulseHint 1.4s infinite ease-in-out;
+      pointer-events: none;
+    }
+
+    @keyframes pulseHint {
+      0%, 100% { opacity: 0.55; transform: scale(0.97); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    .sq-check {
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.92) 0%, rgba(185, 28, 28, 0.72) 65%, transparent 100%) !important;
+      animation: checkPulse 1.2s infinite alternate;
+    }
+
+    @keyframes checkPulse {
+      from { box-shadow: inset 0 0 10px #ef4444; }
+      to { box-shadow: inset 0 0 24px #fca5a5; }
+    }
+
+    /* Legal Move Indicators */
+    .legal-dot {
+      width: 28%;
+      height: 28%;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.78);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+      z-index: 15;
+      transition: transform 0.15s ease;
+    }
+
+    .chess-square:hover .legal-dot {
+      transform: scale(1.25);
+      background: rgba(16, 185, 129, 0.95);
+    }
+
+    .legal-capture-ring {
+      position: absolute;
+      inset: 7%;
+      border-radius: 9999px;
+      border: 4px solid rgba(239, 68, 68, 0.82);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.45), inset 0 0 8px rgba(239, 68, 68, 0.35);
+      pointer-events: none;
+      z-index: 15;
+      transition: transform 0.15s ease;
+    }
+
+    .chess-square:hover .legal-capture-ring {
+      transform: scale(1.06);
+    }
+
+    /* Chess Piece Styling & Smooth Animation */
+    .piece-wrapper {
+      width: 84%;
+      height: 84%;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+      filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.55));
+    }
+
+    .chess-square:hover .piece-wrapper {
+      transform: translateY(-3px) scale(1.05);
+    }
+
+    .piece-drop-anim {
+      animation: pieceArrive 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    @keyframes pieceArrive {
+      0% { transform: scale(1.26) translateY(-10px); opacity: 0.75; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* Evaluation Bar */
+    .eval-bar-container {
+      width: 18px;
+      border-radius: 9999px;
+      background: #181a20;
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+    }
+
+    .eval-bar-fill {
+      width: 100%;
+      background: linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%);
+      transition: height 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      position: absolute;
+      bottom: 0;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 17, 24, 0.6);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.35);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(212, 175, 55, 0.6);
+    }
+
+    .thinking-pulse {
+      animation: thinkingGlow 1.5s infinite ease-in-out;
+    }
+    @keyframes thinkingGlow {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body data-theme="walnut" class="antialiased selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP SOVEREIGN HEADER & INDEXEDDB GEMINI API KEY VAULT -->
+  <header class="border-b border-amber-500/20 bg-[#0c0e14]/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-[1440px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Emblem -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 p-[1.5px] shadow-lg shadow-amber-500/20">
+          <div class="w-full h-full bg-[#11131b] rounded-[10px] flex items-center justify-center">
+            <svg viewBox="0 0 36 36" class="w-6 h-6 text-amber-400" fill="currentColor">
+              <path d="M18 3l2.2 4.5L25 8.2l-3.5 3.4.8 4.8L18 14.1l-4.3 2.3.8-4.8L11 8.2l4.8-.7L18 3zm-7 16h14l2 10H9l2-10zm-3 12h20v2H8v-2z"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-royal text-lg sm:text-xl font-bold tracking-wider bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+              AURELIA SOVEREIGN CHESS
+            </h1>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              AI Moves 1st Edition
+            </span>
+          </div>
+          <p class="text-[11px] text-gray-400">Dual-Core Engine: Gemini 2.5 Flash &amp; Alpha-Beta Minimax • IndexedDB Vault</p>
+        </div>
+      </div>
+
+      <!-- IndexedDB Gemini API Key Vault Bar -->
+      <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+        <div class="flex items-center bg-[#141722] border border-amber-500/30 rounded-xl px-2.5 py-1.5 gap-2 flex-1 sm:flex-initial">
+          <span class="text-amber-400 text-xs font-semibold whitespace-nowrap flex items-center gap-1.5" title="Stored locally in browser IndexedDB">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+            </svg>
+            Gemini API Key:
+          </span>
+          <input
+            id="geminiApiKeyInput"
+            type="password"
+            placeholder="Paste AIzaSy... key (IndexedDB)"
+            class="bg-transparent text-xs text-amber-100 placeholder-gray-500 focus:outline-none w-36 sm:w-48 font-mono-code"
+          />
+          <button id="toggleKeyVisibilityBtn" type="button" class="text-gray-400 hover:text-amber-300 text-xs px-1" title="Show/Hide Key">
+            👁️
+          </button>
+          <button id="saveApiKeyBtn" type="button" class="gold-btn text-xs px-2.5 py-1 rounded-lg">
+            Save to DB
+          </button>
+          <button id="clearApiKeyBtn" type="button" class="obsidian-btn text-xs px-2 py-1 rounded-lg text-rose-300 hover:text-rose-200" title="Erase Key from IndexedDB">
+            Clear
+          </button>
+        </div>
+
+        <!-- IndexedDB Status Pill -->
+        <div id="idbStatusBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 text-[11px] text-emerald-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="idbStatusText">IndexedDB Ready</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="max-w-[1440px] mx-auto px-3 sm:px-5 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+    <!-- LEFT COLUMN: ENGINE CONTROLS, AI BRAIN & INDEXEDDB ARCHIVE (3 Cols on Desktop) -->
+    <section class="lg:col-span-3 space-y-4 order-2 lg:order-1">
+      <!-- AI Architect & Engine Mode Card -->
+      <div class="luxury-panel rounded-2xl p-4 space-y-3.5">
+        <div class="flex items-center justify-between border-b border-amber-500/15 pb-2.5">
+          <h2 class="font-royal text-sm font-bold tracking-wider text-amber-300 uppercase flex items-center gap-2">
+            <span>⚡</span> AI Adversary Core
+          </h2>
+          <span id="aiFirstBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/30">
+            AI Moves 1st (White)
+          </span>
+        </div>
+
+        <!-- Engine Selector -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Intelligence Engine</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="modeMinimaxBtn" type="button" class="px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all flex flex-col items-center gap-0.5 bg-amber-500/20 border-amber-400 text-amber-200">
+              <span>♟️ Minimax α-β</span>
+              <span class="text-[10px] opacity-75">Instant Tactical</span>
+            </button>
+            <button id="modeGeminiBtn" type="button" class="px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all flex flex-col items-center gap-0.5 bg-[#161923] border-amber-500/25 text-gray-300 hover:border-amber-400/60">
+              <span>✨ Gemini 2.5 AI</span>
+              <span class="text-[10px] opacity-75">Grandmaster LLM</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Algorithmic Depth Slider -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-gray-400">Algorithmic Search Depth</span>
+            <span id="depthLabel" class="font-mono-code text-amber-300 font-semibold">Depth 3 (Strong)</span>
+          </div>
+          <input id="depthSlider" type="range" min="2" max="4" value="3" class="w-full accent-amber-400 cursor-pointer" />
+        </div>
+
+        <!-- Turn Order & Side Selector -->
+        <div class="space-y-1.5 pt-1">
+          <label class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Turn Order &amp; Side</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="aiFirstWhiteBtn" type="button" class="obsidian-btn px-2.5 py-2 rounded-xl text-xs font-medium border-amber-400 text-amber-300">
+              👑 AI 1st (White)
+            </button>
+            <button id="userFirstWhiteBtn" type="button" class="obsidian-btn px-2.5 py-2 rounded-xl text-xs font-medium">
+              🛡️ You 1st (White)
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary Action Buttons -->
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button id="newGameBtn" type="button" class="gold-btn py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <span>⚔️</span> New Match
+          </button>
+          <button id="hintBtn" type="button" class="obsidian-btn py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <span>💡</span> Best Hint
+          </button>
+          <button id="undoBtn" type="button" class="obsidian-btn py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <span>↩️</span> Undo Turn
+          </button>
+          <button id="soundToggleBtn" type="button" class="obsidian-btn py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <span id="soundIcon">🔊</span> <span id="soundText">Audio On</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Board Aesthetics & Theme Plugin -->
+      <div class="luxury-panel rounded-2xl p-4 space-y-3">
+        <h3 class="font-royal text-xs font-bold tracking-wider text-amber-300 uppercase flex items-center gap-2">
+          <span>🎨</span> Atelier Board Themes
+        </h3>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-set-theme="walnut" class="theme-chip px-2 py-2 rounded-xl border border-amber-400 bg-amber-500/15 text-[11px] font-medium text-amber-200 flex flex-col items-center gap-1">
+            <span class="w-5 h-5 rounded-full border border-white/30" style="background: linear-gradient(135deg, #e8dcc4 50%, #6e472b 50%);"></span>
+            Walnut
+          </button>
+          <button data-set-theme="obsidian" class="theme-chip px-2 py-2 rounded-xl border border-white/10 bg-[#161923] text-[11px] font-medium text-gray-300 flex flex-col items-center gap-1">
+            <span class="w-5 h-5 rounded-full border border-white/30" style="background: linear-gradient(135deg, #9ca3af 50%, #1f2430 50%);"></span>
+            Obsidian
+          </button>
+          <button data-set-theme="emerald" class="theme-chip px-2 py-2 rounded-xl border border-white/10 bg-[#161923] text-[11px] font-medium text-gray-300 flex flex-col items-center gap-1">
+            <span class="w-5 h-5 rounded-full border border-white/30" style="background: linear-gradient(135deg, #e6ebe0 50%, #285943 50%);"></span>
+            Emerald
+          </button>
+        </div>
+      </div>
+
+      <!-- IndexedDB Saved Games Vault -->
+      <div class="luxury-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-royal text-xs font-bold tracking-wider text-amber-300 uppercase flex items-center gap-1.5">
+            <span>🗄️</span> IndexedDB Match Vault
+          </h3>
+          <button id="saveMatchBtn" type="button" class="text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/30 transition">
+            + Save Match
+          </button>
+        </div>
+        <div id="savedGamesList" class="space-y-2 max-h-44 overflow-y-auto pr-1 text-xs">
+          <p class="text-gray-500 text-[11px] italic">No archived matches in IndexedDB yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTER COLUMN: MASTERPIECE CHESSBOARD & EVALUATION BAR (6 Cols on Desktop) -->
+    <section class="lg:col-span-6 flex flex-col items-center order-1 lg:order-2">
+      <!-- Top Player Banner (Opponent / AI by default) -->
+      <div class="w-full max-w-[620px] luxury-panel rounded-2xl px-4 py-2.5 mb-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <div id="topAvatar" class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-black font-bold text-sm shadow">
+            AI
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="topPlayerName" class="font-semibold text-sm text-amber-100">Aurelia Sovereign AI</span>
+              <span id="topPlayerColorBadge" class="text-[10px] px-2 py-0.5 rounded bg-white/10 text-amber-300 font-mono-code">WHITE (1st)</span>
+            </div>
+            <div id="topCapturedRow" class="flex items-center gap-0.5 min-h-[20px] mt-0.5"></div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div id="topMaterialAdv" class="text-xs font-mono-code font-semibold text-emerald-400"></div>
+          <div id="aiThinkingIndicator" class="hidden text-[11px] text-amber-300 font-medium thinking-pulse">
+            ✨ Calculating move...
+          </div>
+        </div>
+      </div>
+
+      <!-- Board + Vertical Evaluation Bar Wrapper -->
+      <div class="w-full max-w-[620px] flex items-stretch gap-2.5 sm:gap-3.5">
+        <!-- Real-time Engine Evaluation Bar -->
+        <div class="flex flex-col items-center justify-between py-1">
+          <span id="evalTopText" class="text-[10px] font-mono-code text-gray-400">0.0</span>
+          <div class="eval-bar-container flex-1 my-1.5">
+            <div id="evalBarFill" class="eval-bar-fill" style="height: 50%;"></div>
+          </div>
+          <span id="evalBottomText" class="text-[10px] font-mono-code text-amber-300">W</span>
+        </div>
+
+        <!-- Sovereign Chessboard Frame -->
+        <div class="board-outer-frame flex-1">
+          <div id="chessboard" class="board-inner-bevel" aria-label="Interactive Chessboard"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Player Banner (User by default) -->
+      <div class="w-full max-w-[620px] luxury-panel rounded-2xl px-4 py-2.5 mt-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <div id="bottomAvatar" class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold text-sm">
+            YOU
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="bottomPlayerName" class="font-semibold text-sm text-gray-100">Challenger (You)</span>
+              <span id="bottomPlayerColorBadge" class="text-[10px] px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono-code">BLACK (2nd)</span>
+            </div>
+            <div id="bottomCapturedRow" class="flex items-center gap-0.5 min-h-[20px] mt-0.5"></div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div id="bottomMaterialAdv" class="text-xs font-mono-code font-semibold text-emerald-400"></div>
+          <div id="turnStatusBanner" class="text-xs font-semibold text-amber-300">
+            AI Opening Turn...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: GRANDMASTER COMMENTARY, MOVE LOG & FEN/PGN PLUGINS (3 Cols on Desktop) -->
+    <section class="lg:col-span-3 space-y-4 order-3">
+      <!-- AI Grandmaster Commentary & Tactical Telemetry -->
+      <div class="luxury-panel rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center justify-between border-b border-amber-500/15 pb-2">
+          <h3 class="font-royal text-xs font-bold tracking-wider text-amber-300 uppercase flex items-center gap-1.5">
+            <span>🎙️</span> Grandmaster Telemetry
+          </h3>
+          <span id="activeEngineBadge" class="text-[10px] font-mono-code px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            Minimax α-β
+          </span>
+        </div>
+        <div id="aiCommentaryBox" class="text-xs text-gray-200 leading-relaxed bg-[#0f1118] border border-amber-500/15 rounded-xl p-3 min-h-[76px]">
+          Initializing Sovereign Board... AI commands the White pieces and will execute the opening move momentarily.
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center pt-1">
+          <div class="bg-[#11131c] rounded-xl p-2 border border-white/5">
+            <div class="text-[10px] text-gray-400 uppercase">Move #</div>
+            <div id="statMoveCount" class="font-mono-code text-sm font-bold text-amber-300">1</div>
+          </div>
+          <div class="bg-[#11131c] rounded-xl p-2 border border-white/5">
+            <div class="text-[10px] text-gray-400 uppercase">Legal Moves</div>
+            <div id="statLegalMoves" class="font-mono-code text-sm font-bold text-emerald-300">20</div>
+          </div>
+          <div class="bg-[#11131c] rounded-xl p-2 border border-white/5">
+            <div class="text-[10px] text-gray-400 uppercase">Nodes Eval</div>
+            <div id="statNodesEval" class="font-mono-code text-sm font-bold text-sky-300">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Algebraic Move Ledger Plugin -->
+      <div class="luxury-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between border-b border-amber-500/15 pb-2">
+          <h3 class="font-royal text-xs font-bold tracking-wider text-amber-300 uppercase flex items-center gap-1.5">
+            <span>📜</span> Move Ledger (SAN)
+          </h3>
+          <button id="copyPgnBtn" type="button" class="text-[11px] px-2 py-0.5 rounded bg-white/5 hover:bg-amber-500/20 text-amber-200 border border-amber-500/25 transition">
+            Copy PGN
+          </button>
+        </div>
+        <div id="moveHistoryContainer" class="h-56 overflow-y-auto bg-[#0d0f16] rounded-xl border border-white/5 p-2 font-mono-code text-xs space-y-1">
+          <div class="text-gray-500 text-center py-8 italic">Awaiting opening move...</div>
+        </div>
+      </div>
+
+      <!-- Live FEN Position Inspector Plugin -->
+      <div class="luxury-panel rounded-2xl p-4 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-royal font-bold uppercase tracking-wider text-amber-300">FEN Telemetry</span>
+          <button id="copyFenBtn" type="button" class="text-[10px] text-gray-400 hover:text-amber-300 underline">Copy FEN</button>
+        </div>
+        <input id="fenDisplayInput" type="text" readonly class="w-full bg-[#0c0e14] border border-white/10 rounded-lg px-2.5 py-1.5 text-[10px] font-mono-code text-gray-300 focus:outline-none" />
+      </div>
+    </section>
+  </main>
+
+  <!-- PAWN PROMOTION MODAL -->
+  <div id="promotionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="luxury-panel rounded-2xl p-6 max-w-sm w-full text-center space-y-4 border-2 border-amber-400/50">
+      <h3 class="font-royal text-lg font-bold text-amber-300">Royal Pawn Promotion</h3>
+      <p class="text-xs text-gray-300">Select the sovereign piece your pawn ascends into:</p>
+      <div id="promotionChoices" class="grid grid-cols-4 gap-3 pt-2"></div>
+    </div>
+  </div>
+
+  <!-- GAME OVER / CHECKMATE MODAL -->
+  <div id="gameOverModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="luxury-panel rounded-2xl p-6 max-w-md w-full text-center space-y-4 border-2 border-amber-400/60 shadow-2xl">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-3xl">
+        👑
+      </div>
+      <h3 id="gameOverTitle" class="font-royal text-2xl font-bold text-amber-300">Checkmate!</h3>
+      <p id="gameOverSubtitle" class="text-sm text-gray-200">Aurelia Sovereign AI claims victory.</p>
+      <div class="flex justify-center gap-3 pt-2">
+        <button id="modalNewGameBtn" type="button" class="gold-btn px-5 py-2.5 rounded-xl text-xs">
+          Play Rematch (AI 1st)
+        </button>
+        <button id="modalCloseBtn" type="button" class="obsidian-btn px-4 py-2.5 rounded-xl text-xs">
+          Inspect Board
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION BANNER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    /**
+     * ============================================================================
+     * AURELIA SOVEREIGN CHESS — COMPLETE ENGINE, BESPOKE SVG ART, INDEXEDDB & AI
+     * ============================================================================
+     */
+
+    // --------------------------------------------------------------------------
+    // 1. BESPOKE STAUNTON-INSPIRED LUXURY SVG CHESS PIECES
+    // --------------------------------------------------------------------------
+    const PIECE_SVGS = {
+      wP: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="wGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#f3e8d2"/><stop offset="100%" stop-color="#cbb389"/></linearGradient></defs><g fill="url(#wGrad)" stroke="#2b1e12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z"/><path d="M12.5 37h20" stroke="#8c6d3f" stroke-width="1.2"/></g></svg>`,
+      wR: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="wGradR" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#f2e6cf"/><stop offset="100%" stop-color="#c9b084"/></linearGradient></defs><g fill="url(#wGradR)" stroke="#2b1e12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5"/><path d="M34 14l-3 3H14l-3-3"/><path d="M31 17v12.5H14V17"/><path d="M31 29.5l1.5 2.5h-20l1.5-2.5"/><path d="M11 14h23" fill="none" stroke="#8c6d3f" stroke-width="1.2"/></g></svg>`,
+      wN: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="wGradN" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#f2e6cf"/><stop offset="100%" stop-color="#c9b084"/></linearGradient></defs><g fill="url(#wGradN)" stroke="#2b1e12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3"/><circle cx="14.5" cy="15.5" r="1.2" fill="#2b1e12"/><path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0z" fill="#2b1e12"/></g></svg>`,
+      wB: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="wGradB" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#f2e6cf"/><stop offset="100%" stop-color="#c9b084"/></linearGradient></defs><g fill="url(#wGradB)" stroke="#2b1e12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><circle cx="22.5" cy="8" r="2.5"/><path d="M17.5 26h10M15 30h15M22.5 15.5v5M20 18h5" fill="none" stroke="#8c6d3f" stroke-width="1.4"/></g></svg>`,
+      wQ: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="wGradQ" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#f2e6cf"/><stop offset="100%" stop-color="#c9b084"/></linearGradient></defs><g fill="url(#wGradQ)" stroke="#2b1e12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.2"/><circle cx="14" cy="9" r="2.2"/><circle cx="22.5" cy="8" r="2.2"/><circle cx="31" cy="9" r="2.2"/><circle cx="39" cy="12" r="2.2"/><path d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5 9 26z"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path d="M11.5 30c3.5-1 18.5-1 22 0M12 33.5c6-1 15-1 21 0" fill="none" stroke="#8c6d3f" stroke-width="1.3"/></g></svg>`,
+      wK: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="wGradK" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="65%" stop-color="#f2e6cf"/><stop offset="100%" stop-color="#c9b084"/></linearGradient></defs><g fill="url(#wGradK)" stroke="#2b1e12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63V6M20 8h5" stroke="#d4af37" stroke-width="2.2"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z"/><path d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0" fill="none" stroke="#8c6d3f" stroke-width="1.3"/></g></svg>`,
+
+      bP: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="bGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3c4252"/><stop offset="55%" stop-color="#1b1e26"/><stop offset="100%" stop-color="#0b0c10"/></linearGradient></defs><g fill="url(#bGrad)" stroke="#d4af37" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z"/><path d="M12.5 37h20" stroke="#f3d06b" stroke-width="1.1"/></g></svg>`,
+      bR: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="bGradR" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3c4252"/><stop offset="55%" stop-color="#1b1e26"/><stop offset="100%" stop-color="#0b0c10"/></linearGradient></defs><g fill="url(#bGradR)" stroke="#d4af37" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39h27v-3H9v3zM12.5 32l1.5-2.5h17l1.5 2.5h-20zM12 36v-4h21v4H12z"/><path d="M14 29.5v-13h17v13H14z"/><path d="M14 16.5L11 14h23l-3 2.5H14zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z"/><path d="M12 35.5h21M13 31.5h19M14 29.5h17M14 16.5h17" fill="none" stroke="#f3d06b" stroke-width="1"/></g></svg>`,
+      bN: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="bGradN" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3c4252"/><stop offset="55%" stop-color="#1b1e26"/><stop offset="100%" stop-color="#0b0c10"/></linearGradient></defs><g fill="url(#bGradN)" stroke="#d4af37" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21"/><path d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4.003 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3"/><circle cx="14.5" cy="15.5" r="1.2" fill="#f3d06b"/><path d="M24.55 10.4l-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34-2.37-4.49-5.79-6.64-9.19-7.16l-.51-.1z" fill="#d4af37" stroke="none"/></g></svg>`,
+      bB: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="bGradB" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3c4252"/><stop offset="55%" stop-color="#1b1e26"/><stop offset="100%" stop-color="#0b0c10"/></linearGradient></defs><g fill="url(#bGradB)" stroke="#d4af37" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2z"/><path d="M15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z"/><circle cx="22.5" cy="8" r="2.5"/><path d="M17.5 26h10M15 30h15M22.5 15.5v5M20 18h5" fill="none" stroke="#f3d06b" stroke-width="1.4"/></g></svg>`,
+      bQ: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="bGradQ" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3c4252"/><stop offset="55%" stop-color="#1b1e26"/><stop offset="100%" stop-color="#0b0c10"/></linearGradient></defs><g fill="url(#bGradQ)" stroke="#d4af37" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.2" fill="#f3d06b"/><circle cx="14" cy="9" r="2.2" fill="#f3d06b"/><circle cx="22.5" cy="8" r="2.2" fill="#f3d06b"/><circle cx="31" cy="9" r="2.2" fill="#f3d06b"/><circle cx="39" cy="12" r="2.2" fill="#f3d06b"/><path d="M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5 9 26z"/><path d="M9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z"/><path d="M11.5 30c3.5-1 18.5-1 22 0M12 33.5c6-1 15-1 21 0" fill="none" stroke="#f3d06b" stroke-width="1.2"/></g></svg>`,
+      bK: `<svg viewBox="0 0 45 45" class="w-full h-full"><defs><linearGradient id="bGradK" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3c4252"/><stop offset="55%" stop-color="#1b1e26"/><stop offset="100%" stop-color="#0b0c10"/></linearGradient></defs><g fill="url(#bGradK)" stroke="#d4af37" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63V6M20 8h5" stroke="#f3d06b" stroke-width="2.2"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z"/><path d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0" fill="none" stroke="#f3d06b" stroke-width="1.2"/></g></svg>`
+    };
+
+    // --------------------------------------------------------------------------
+    // 2. PROCEDURAL WEB AUDIO API SOUND SYNTHESIZER (NO EXTERNAL FILES)
+    // --------------------------------------------------------------------------
+    class SoundEngine {
+      constructor() {
+        this.enabled = true;
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      play(type) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          if (type === 'move') {
+            // Crisp luxury walnut wood tap
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(190, now);
+            osc.frequency.exponentialRampToValueAtTime(68, now + 0.08);
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+            osc.start(now);
+            osc.stop(now + 0.09);
+          } else if (type === 'capture') {
+            // Resonant double-thud capture
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(42, now + 0.14);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.16);
+          } else if (type === 'check') {
+            // Metallic brass alert chime
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, now); // D5
+            osc.frequency.setValueAtTime(880, now + 0.09); // A5
+            gain.gain.setValueAtTime(0.28, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+            osc.start(now);
+            osc.stop(now + 0.34);
+          } else if (type === 'castle') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.setValueAtTime(293.66, now + 0.07);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            osc.start(now);
+            osc.stop(now + 0.2);
+          } else if (type === 'gameover') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.setValueAtTime(554.37, now + 0.12);
+            osc.frequency.setValueAtTime(659.25, now + 0.24);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc.start(now);
+            osc.stop(now + 0.62);
+          }
+        } catch (e) {
+          // Ignore audio autoplay blocks gracefully
+        }
+      }
+    }
+    const soundFX = new SoundEngine();
+
+    // --------------------------------------------------------------------------
+    // 3. INDEXEDDB PERSISTENCE LAYER (GEMINI API KEY & GAME ARCHIVE)
+    // --------------------------------------------------------------------------
+    class AureliaIndexedDB {
+      constructor() {
+        this.dbName = 'ChessMasterpieceDB';
+        this.version = 1;
+        this.db = null;
+      }
+
+      async open() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.dbName, this.version);
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('settings')) {
+              db.createObjectStore('settings', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('games')) {
+              db.createObjectStore('games', { keyPath: 'id', autoIncrement: true });
+            }
+          };
+          request.onsuccess = (event) => {
+            this.db = event.target.result;
+            resolve(this.db);
+          };
+          request.onerror = (event) => reject(event.target.error);
+        });
+      }
+
+      async saveSetting(id, value) {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('settings', 'readwrite');
+          const store = tx.objectStore('settings');
+          const req = store.put({ id, value, updatedAt: Date.now() });
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async getSetting(id) {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('settings', 'readonly');
+          const store = tx.objectStore('settings');
+          const req = store.get(id);
+          req.onsuccess = () => resolve(req.result ? req.result.value : null);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async deleteSetting(id) {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('settings', 'readwrite');
+          const store = tx.objectStore('settings');
+          const req = store.delete(id);
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async saveGame(gameRecord) {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('games', 'readwrite');
+          const store = tx.objectStore('games');
+          const req = store.add(gameRecord);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async getAllGames() {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('games', 'readonly');
+          const store = tx.objectStore('games');
+          const req = store.getAll();
+          req.onsuccess = () => resolve((req.result || []).reverse());
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async deleteGame(id) {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('games', 'readwrite');
+          const store = tx.objectStore('games');
+          const req = store.delete(id);
+          req.onsuccess = () => resolve(true);
+          req.onerror = () => reject(req.error);
+        });
+      }
+    }
+    const vaultDB = new AureliaIndexedDB();
+
+    // --------------------------------------------------------------------------
+    // 4. COMPLETE FIDE-COMPLIANT CHESS RULES & MOVE GENERATOR ENGINE
+    // --------------------------------------------------------------------------
+    const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const PIECE_VALUES = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
+
+    // Piece-Square Tables (from White's perspective, row 0 = rank 8, row 7 = rank 1)
+    const PST = {
+      P: [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [50, 50, 50, 50, 50, 50, 50, 50],
+        [10, 10, 20, 30, 30, 20, 10, 10],
+        [5,  5, 10, 25, 25, 10,  5,  5],
+        [0,  0,  0, 20, 20,  0,  0,  0],
+        [5, -5,-10,  0,  0,-10, -5,  5],
+        [5, 10, 10,-20,-20, 10, 10,  5],
+        [0,  0,  0,  0,  0,  0,  0,  0]
+      ],
+      N: [
+        [-50,-40,-30,-30,-30,-30,-40,-50],
+        [-40,-20,  0,  0,  0,  0,-20,-40],
+        [-30,  0, 10, 15, 15, 10,  0,-30],
+        [-30,  5, 15, 20, 20, 15,  5,-30],
+        [-30,  0, 15, 20, 20, 15,  0,-30],
+        [-30,  5, 10, 15, 15, 10,  5,-30],
+        [-40,-20,  0,  5,  5,  0,-20,-40],
+        [-50,-40,-30,-30,-30,-30,-40,-50]
+      ],
+      B: [
+        [-20,-10,-10,-10,-10,-10,-10,-20],
+        [-10,  0,  0,  0,  0,  0,  0,-10],
+        [-10,  0,  5, 10, 10,  5,  0,-10],
+        [-10,  5,  5, 10, 10,  5,  5,-10],
+        [-10,  0, 10, 10, 10, 10,  0,-10],
+        [-10, 10, 10, 10, 10, 10, 10,-10],
+        [-10,  5,  0,  0,  0,  0,  5,-10],
+        [-20,-10,-10,-10,-10,-10,-10,-20]
+      ],
+      R: [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [5, 10, 10, 10, 10, 10, 10,  5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [-5,  0,  0,  0,  0,  0,  0, -5],
+        [0,  0,  0,  5,  5,  0,  0,  0]
+      ],
+      Q: [
+        [-20,-10,-10, -5, -5,-10,-10,-20],
+        [-10,  0,  0,  0,  0,  0,  0,-10],
+        [-10,  0,  5,  5,  5,  5,  0,-10],
+        [ -5,  0,  5,  5,  5,  5,  0, -5],
+        [  0,  0,  5,  5,  5,  5,  0, -5],
+        [-10,  5,  5,  5,  5,  5,  0,-10],
+        [-10,  0,  5,  0,  0,  0,  0,-10],
+        [-20,-10,-10, -5, -5,-10,-10,-20]
+      ],
+      K: [
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-30,-40,-40,-50,-50,-40,-40,-30],
+        [-20,-30,-30,-40,-40,-30,-30,-20],
+        [-10,-20,-20,-20,-20,-20,-20,-10],
+        [ 20, 20,  0,  0,  0,  0, 20, 20],
+        [ 20, 30, 10,  0,  0, 10, 30, 20]
+      ]
+    };
+
+    class ChessEngine {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.board = [
+          ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
+          ['bP', 'bP', 'bP', 'bP', 'bP', 'bP', 'bP', 'bP'],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          [null, null, null, null, null, null, null, null],
+          ['wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP'],
+          ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']
+        ];
+        this.turn = 'w';
+        this.castling = { wK: true, wQ: true, bK: true, bQ: true };
+        this.enPassant = null; // { r, c } target square
+        this.halfMoveClock = 0;
+        this.fullMoveNumber = 1;
+        this.history = [];
+        this.positionCounts = {};
+        this.recordPositionHash();
+      }
+
+      cloneState() {
+        return {
+          board: this.board.map(row => [...row]),
+          turn: this.turn,
+          castling: { ...this.castling },
+          enPassant: this.enPassant ? { ...this.enPassant } : null,
+          halfMoveClock: this.halfMoveClock,
+          fullMoveNumber: this.fullMoveNumber
+        };
+      }
+
+      restoreState(state) {
+        this.board = state.board.map(row => [...row]);
+        this.turn = state.turn;
+        this.castling = { ...state.castling };
+        this.enPassant = state.enPassant ? { ...state.enPassant } : null;
+        this.halfMoveClock = state.halfMoveClock;
+        this.fullMoveNumber = state.fullMoveNumber;
+      }
+
+      coordToAlgebraic(r, c) {
+        return `${FILES[c]}${8 - r}`;
+      }
+
+      algebraicToCoord(sq) {
+        const c = FILES.indexOf(sq[0]);
+        const r = 8 - parseInt(sq[1], 10);
+        return { r, c };
+      }
+
+      getFEN() {
+        let rows = [];
+        for (let r = 0; r < 8; r++) {
+          let empty = 0;
+          let rowStr = '';
+          for (let c = 0; c < 8; c++) {
+            const p = this.board[r][c];
+            if (!p) {
+              empty++;
+            } else {
+              if (empty > 0) { rowStr += empty; empty = 0; }
+              const letter = p[1];
+              rowStr += p[0] === 'w' ? letter.toUpperCase() : letter.toLowerCase();
+            }
+          }
+          if (empty > 0) rowStr += empty;
+          rows.push(rowStr);
+        }
+        let castleStr = '';
+        if (this.castling.wK) castleStr += 'K';
+        if (this.castling.wQ) castleStr += 'Q';
+        if (this.castling.bK) castleStr += 'k';
+        if (this.castling.bQ) castleStr += 'q';
+        if (!castleStr) castleStr = '-';
+        const epStr = this.enPassant ? this.coordToAlgebraic(this.enPassant.r, this.enPassant.c) : '-';
+        return `${rows.join('/')} ${this.turn} ${castleStr} ${epStr} ${this.halfMoveClock} ${this.fullMoveNumber}`;
+      }
+
+      recordPositionHash() {
+        const key = this.getFEN().split(' ').slice(0, 4).join(' ');
+        this.positionCounts[key] = (this.positionCounts[key] || 0) + 1;
+      }
+
+      isInside(r, c) {
+        return r >= 0 && r < 8 && c >= 0 && c < 8;
+      }
+
+      findKing(color) {
+        const target = color + 'K';
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (this.board[r][c] === target) return { r, c };
+          }
+        }
+        return null;
+      }
+
+      isSquareAttacked(r, c, byColor) {
+        // Pawn attacks
+        const pawnDir = byColor === 'w' ? 1 : -1;
+        for (const dc of [-1, 1]) {
+          const pr = r + pawnDir, pc = c + dc;
+          if (this.isInside(pr, pc) && this.board[pr][pc] === byColor + 'P') return true;
+        }
+        // Knight attacks
+        const knightDeltas = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+        for (const [dr, dc] of knightDeltas) {
+          const nr = r + dr, nc = c + dc;
+          if (this.isInside(nr, nc) && this.board[nr][nc] === byColor + 'N') return true;
+        }
+        // King attacks
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const kr = r + dr, kc = c + dc;
+            if (this.isInside(kr, kc) && this.board[kr][kc] === byColor + 'K') return true;
+          }
+        }
+        // Rook / Queen orthogonal rays
+        const ortho = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [dr, dc] of ortho) {
+          let nr = r + dr, nc = c + dc;
+          while (this.isInside(nr, nc)) {
+            const p = this.board[nr][nc];
+            if (p) {
+              if (p === byColor + 'R' || p === byColor + 'Q') return true;
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+        // Bishop / Queen diagonal rays
+        const diag = [[-1,-1],[-1,1],[1,-1],[1,1]];
+        for (const [dr, dc] of diag) {
+          let nr = r + dr, nc = c + dc;
+          while (this.isInside(nr, nc)) {
+            const p = this.board[nr][nc];
+            if (p) {
+              if (p === byColor + 'B' || p === byColor + 'Q') return true;
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+        return false;
+      }
+
+      isInCheck(color) {
+        const king = this.findKing(color);
+        if (!king) return false;
+        const enemy = color === 'w' ? 'b' : 'w';
+        return this.isSquareAttacked(king.r, king.c, enemy);
+      }
+
+      generatePseudoMoves(color) {
+        const moves = [];
+        const enemy = color === 'w' ? 'b' : 'w';
+
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const piece = this.board[r][c];
+            if (!piece || piece[0] !== color) continue;
+            const type = piece[1];
+
+            if (type === 'P') {
+              const dir = color === 'w' ? -1 : 1;
+              const startRow = color === 'w' ? 6 : 1;
+              const promoRow = color === 'w' ? 0 : 7;
+
+              // Forward 1
+              const r1 = r + dir;
+              if (this.isInside(r1, c) && !this.board[r1][c]) {
+                if (r1 === promoRow) {
+                  for (const promo of ['Q', 'R', 'B', 'N']) {
+                    moves.push({ from: { r, c }, to: { r: r1, c }, piece, promotion: promo });
+                  }
+                } else {
+                  moves.push({ from: { r, c }, to: { r: r1, c }, piece });
+                  // Forward 2 from start rank
+                  const r2 = r + dir * 2;
+                  if (r === startRow && !this.board[r2][c]) {
+                    moves.push({ from: { r, c }, to: { r: r2, c }, piece, isDoublePawn: true });
+                  }
+                }
+              }
+
+              // Captures & En Passant
+              for (const dc of [-1, 1]) {
+                const nc = c + dc;
+                if (!this.isInside(r1, nc)) continue;
+                const target = this.board[r1][nc];
+                if (target && target[0] === enemy) {
+                  if (r1 === promoRow) {
+                    for (const promo of ['Q', 'R', 'B', 'N']) {
+                      moves.push({ from: { r, c }, to: { r: r1, c: nc }, piece, captured: target, promotion: promo });
+                    }
+                  } else {
+                    moves.push({ from: { r, c }, to: { r: r1, c: nc }, piece, captured: target });
+                  }
+                } else if (this.enPassant && this.enPassant.r === r1 && this.enPassant.c === nc) {
+                  moves.push({
+                    from: { r, c },
+                    to: { r: r1, c: nc },
+                    piece,
+                    captured: enemy + 'P',
+                    isEnPassant: true
+                  });
+                }
+              }
+            } else if (type === 'N') {
+              const jumps = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+              for (const [dr, dc] of jumps) {
+                const nr = r + dr, nc = c + dc;
+                if (!this.isInside(nr, nc)) continue;
+                const target = this.board[nr][nc];
+                if (!target || target[0] === enemy) {
+                  moves.push({ from: { r, c }, to: { r: nr, c: nc }, piece, captured: target || null });
+                }
+              }
+            } else if (type === 'B' || type === 'R' || type === 'Q') {
+              const dirs = [];
+              if (type === 'B' || type === 'Q') dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);
+              if (type === 'R' || type === 'Q') dirs.push([-1,0],[1,0],[0,-1],[0,1]);
+              for (const [dr, dc] of dirs) {
+                let nr = r + dr, nc = c + dc;
+                while (this.isInside(nr, nc)) {
+                  const target = this.board[nr][nc];
+                  if (!target) {
+                    moves.push({ from: { r, c }, to: { r: nr, c: nc }, piece });
+                  } else {
+                    if (target[0] === enemy) {
+                      moves.push({ from: { r, c }, to: { r: nr, c: nc }, piece, captured: target });
+                    }
+                    break;
+                  }
+                  nr += dr; nc += dc;
+                }
+              }
+            } else if (type === 'K') {
+              for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                  if (dr === 0 && dc === 0) continue;
+                  const nr = r + dr, nc = c + dc;
+                  if (!this.isInside(nr, nc)) continue;
+                  const target = this.board[nr][nc];
+                  if (!target || target[0] === enemy) {
+                    moves.push({ from: { r, c }, to: { r: nr, c: nc }, piece, captured: target || null });
+                  }
+                }
+              }
+              // Castling
+              if (color === 'w' && r === 7 && c === 4 && !this.isInCheck('w')) {
+                if (this.castling.wK && !this.board[7][5] && !this.board[7][6] &&
+                    !this.isSquareAttacked(7, 5, 'b') && !this.isSquareAttacked(7, 6, 'b')) {
+                  moves.push({ from: { r: 7, c: 4 }, to: { r: 7, c: 6 }, piece, isCastle: 'K' });
+                }
+                if (this.castling.wQ && !this.board[7][3] && !this.board[7][2] && !this.board[7][1] &&
+                    !this.isSquareAttacked(7, 3, 'b') && !this.isSquareAttacked(7, 2, 'b')) {
+                  moves.push({ from: { r: 7, c: 4 }, to: { r: 7, c: 2 }, piece, isCastle: 'Q' });
+                }
+              } else if (color === 'b' && r === 0 && c === 4 && !this.isInCheck('b')) {
+                if (this.castling.bK && !this.board[0][5] && !this.board[0][6] &&
+                    !this.isSquareAttacked(0, 5, 'w') && !this.isSquareAttacked(0, 6, 'w')) {
+                  moves.push({ from: { r: 0, c: 4 }, to: { r: 0, c: 6 }, piece, isCastle: 'K' });
+                }
+                if (this.castling.bQ && !this.board[0][3] && !this.board[0][2] && !this.board[0][1] &&
+                    !this.isSquareAttacked(0, 3, 'w') && !this.isSquareAttacked(0, 2, 'w')) {
+                  moves.push({ from: { r: 0, c: 4 }, to: { r: 0, c: 2 }, piece, isCastle: 'Q' });
+                }
+              }
+            }
+          }
+        }
+        return moves;
+      }
+
+      generateLegalMoves(color = this.turn) {
+        const pseudo = this.generatePseudoMoves(color);
+        const legal = [];
+        for (const m of pseudo) {
+          const snapshot = this.cloneState();
+          this.applyMoveRaw(m);
+          if (!this.isInCheck(color)) {
+            legal.push(m);
+          }
+          this.restoreState(snapshot);
+        }
+        return legal;
+      }
+
+      applyMoveRaw(m) {
+        const { from, to, piece, promotion, isEnPassant, isCastle, isDoublePawn } = m;
+        const color = piece[0];
+        const type = piece[1];
+
+        this.board[to.r][to.c] = promotion ? color + promotion : piece;
+        this.board[from.r][from.c] = null;
+
+        if (isEnPassant) {
+          const capRow = color === 'w' ? to.r + 1 : to.r - 1;
+          this.board[capRow][to.c] = null;
+        }
+
+        if (isCastle) {
+          if (isCastle === 'K') {
+            this.board[from.r][5] = color + 'R';
+            this.board[from.r][7] = null;
+          } else {
+            this.board[from.r][3] = color + 'R';
+            this.board[from.r][0] = null;
+          }
+        }
+
+        // Update castling rights
+        if (piece === 'wK') { this.castling.wK = false; this.castling.wQ = false; }
+        if (piece === 'bK') { this.castling.bK = false; this.castling.bQ = false; }
+        if (from.r === 7 && from.c === 0) this.castling.wQ = false;
+        if (from.r === 7 && from.c === 7) this.castling.wK = false;
+        if (from.r === 0 && from.c === 0) this.castling.bQ = false;
+        if (from.r === 0 && from.c === 7) this.castling.bK = false;
+        if (to.r === 7 && to.c === 0) this.castling.wQ = false;
+        if (to.r === 7 && to.c === 7) this.castling.wK = false;
+        if (to.r === 0 && to.c === 0) this.castling.bQ = false;
+        if (to.r === 0 && to.c === 7) this.castling.bK = false;
+
+        // Update En Passant square
+        if (isDoublePawn) {
+          this.enPassant = { r: (from.r + to.r) / 2, c: from.c };
+        } else {
+          this.enPassant = null;
+        }
+
+        // Half-move clock
+        if (type === 'P' || m.captured) {
+          this.halfMoveClock = 0;
+        } else {
+          this.halfMoveClock++;
+        }
+
+        if (color === 'b') this.fullMoveNumber++;
+        this.turn = color === 'w' ? 'b' : 'w';
+      }
+
+      formatSAN(move, legalMovesBefore) {
+        if (move.isCastle === 'K') return 'O-O';
+        if (move.isCastle === 'Q') return 'O-O-O';
+
+        const type = move.piece[1];
+        const toAlg = this.coordToAlgebraic(move.to.r, move.to.c);
+        let san = '';
+
+        if (type === 'P') {
+          if (move.captured) {
+            san += FILES[move.from.c] + 'x';
+          }
+          san += toAlg;
+          if (move.promotion) san += '=' + move.promotion;
+        } else {
+          san += type;
+          // Disambiguation
+          const others = legalMovesBefore.filter(
+            m => m.piece === move.piece &&
+                 m.to.r === move.to.r &&
+                 m.to.c === move.to.c &&
+                 (m.from.r !== move.from.r || m.from.c !== move.from.c)
+          );
+          if (others.length > 0) {
+            const sameFile = others.some(m => m.from.c === move.from.c);
+            const sameRank = others.some(m => m.from.r === move.from.r);
+            if (!sameFile) san += FILES[move.from.c];
+            else if (!sameRank) san += (8 - move.from.r);
+            else san += this.coordToAlgebraic(move.from.r, move.from.c);
+          }
+          if (move.captured) san += 'x';
+          san += toAlg;
+        }
+
+        // Check / Checkmate suffix
+        const snap = this.cloneState();
+        this.applyMoveRaw(move);
+        const opp = this.turn;
+        if (this.isInCheck(opp)) {
+          const oppMoves = this.generateLegalMoves(opp);
+          san += oppMoves.length === 0 ? '#' : '+';
+        }
+        this.restoreState(snap);
+        return san;
+      }
+
+      makeMove(move) {
+        const legalBefore = this.generateLegalMoves(this.turn);
+        const san = this.formatSAN(move, legalBefore);
+        const snapshot = this.cloneState();
+        this.applyMoveRaw(move);
+        this.recordPositionHash();
+
+        const record = {
+          move,
+          san,
+          uci: this.coordToAlgebraic(move.from.r, move.from.c) +
+               this.coordToAlgebraic(move.to.r, move.to.c) +
+               (move.promotion ? move.promotion.toLowerCase() : ''),
+          snapshot,
+          fenAfter: this.getFEN()
+        };
+        this.history.push(record);
+        return record;
+      }
+
+      undoLastMove() {
+        if (this.history.length === 0) return false;
+        const last = this.history.pop();
+        this.restoreState(last.snapshot);
+        return true;
+      }
+
+      getGameStatus() {
+        const legal = this.generateLegalMoves(this.turn);
+        const inCheck = this.isInCheck(this.turn);
+
+        if (legal.length === 0) {
+          if (inCheck) {
+            const winner = this.turn === 'w' ? 'Black' : 'White';
+            return { over: true, reason: 'Checkmate', winner, text: `Checkmate! ${winner} wins.` };
+          }
+          return { over: true, reason: 'Stalemate', winner: 'Draw', text: 'Draw by Stalemate.' };
+        }
+
+        if (this.halfMoveClock >= 100) {
+          return { over: true, reason: '50-Move Rule', winner: 'Draw', text: 'Draw by 50-Move Rule.' };
+        }
+
+        const key = this.getFEN().split(' ').slice(0, 4).join(' ');
+        if ((this.positionCounts[key] || 0) >= 3) {
+          return { over: true, reason: 'Threefold Repetition', winner: 'Draw', text: 'Draw by Threefold Repetition.' };
+        }
+
+        // Insufficient Material check
+        const pieces = [];
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (this.board[r][c]) pieces.push(this.board[r][c]);
+          }
+        }
+        if (pieces.length === 2) {
+          return { over: true, reason: 'Insufficient Material', winner: 'Draw', text: 'Draw — Insufficient Material.' };
+        }
+        if (pieces.length === 3 && pieces.some(p => p[1] === 'N' || p[1] === 'B')) {
+          return { over: true, reason: 'Insufficient Material', winner: 'Draw', text: 'Draw — Insufficient Material.' };
+        }
+
+        return { over: false, inCheck, legalCount: legal.length };
+      }
+
+      // Static Board Evaluation (in centipawns, positive = White advantage)
+      evaluateBoard() {
+        let score = 0;
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const p = this.board[r][c];
+            if (!p) continue;
+            const color = p[0];
+            const type = p[1];
+            const baseVal = PIECE_VALUES[type];
+            const pstRow = color === 'w' ? r : 7 - r;
+            const posVal = PST[type] ? PST[type][pstRow][c] : 0;
+            if (color === 'w') score += (baseVal + posVal);
+            else score -= (baseVal + posVal);
+          }
+        }
+        return score;
+      }
+
+      // Alpha-Beta Pruning Minimax Search
+      findBestMoveMinimax(depth = 3) {
+        let nodes = 0;
+        const isMaximizing = this.turn === 'w';
+        const legalMoves = this.generateLegalMoves(this.turn);
+        if (legalMoves.length === 0) return { move: null, score: 0, nodes: 0 };
+
+        // Move ordering: captures & promotions first for dramatic alpha-beta speedup
+        legalMoves.sort((a, b) => {
+          const scoreA = (a.captured ? PIECE_VALUES[a.captured[1]] : 0) + (a.promotion ? 800 : 0);
+          const scoreB = (b.captured ? PIECE_VALUES[b.captured[1]] : 0) + (b.promotion ? 800 : 0);
+          return scoreB - scoreA;
+        });
+
+        // Opening book variety for AI move 1 (White)
+        if (this.history.length === 0 && this.turn === 'w') {
+          const grandmasterOpenings = ['e2e4', 'd2d4', 'c2c4', 'g1f3'];
+          const pick = grandmasterOpenings[Math.floor(Math.random() * grandmasterOpenings.length)];
+          const match = legalMoves.find(m =>
+            (this.coordToAlgebraic(m.from.r, m.from.c) + this.coordToAlgebraic(m.to.r, m.to.c)) === pick
+          );
+          if (match) {
+            return {
+              move: match,
+              score: 35,
+              nodes: 128,
+              commentary: `Sovereign Opening Book: Played ${pick.slice(0,2)}→${pick.slice(2,4)} to seize central tempo on Move 1.`
+            };
+          }
+        }
+
+        const alphaBeta = (d, alpha, beta, maximizing) => {
+          nodes++;
+          if (d === 0) return this.evaluateBoard();
+
+          const currentColor = maximizing ? 'w' : 'b';
+          const moves = this.generateLegalMoves(currentColor);
+          if (moves.length === 0) {
+            if (this.isInCheck(currentColor)) {
+              return maximizing ? -99999 - d : 99999 + d;
+            }
+            return 0;
+          }
+
+          moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0));
+
+          if (maximizing) {
+            let maxEval = -Infinity;
+            for (const m of moves) {
+              const snap = this.cloneState();
+              this.applyMoveRaw(m);
+              const ev = alphaBeta(d - 1, alpha, beta, false);
+              this.restoreState(snap);
+              if (ev > maxEval) maxEval = ev;
+              if (ev > alpha) alpha = ev;
+              if (beta <= alpha) break;
+            }
+            return maxEval;
+          } else {
+            let minEval = Infinity;
+            for (const m of moves) {
+              const snap = this.cloneState();
+              this.applyMoveRaw(m);
+              const ev = alphaBeta(d - 1, alpha, beta, true);
+              this.restoreState(snap);
+              if (ev < minEval) minEval = ev;
+              if (ev < beta) beta = ev;
+              if (beta <= alpha) break;
+            }
+            return minEval;
+          }
+        };
+
+        let bestMove = legalMoves[0];
+        let bestScore = isMaximizing ? -Infinity : Infinity;
+        let alpha = -Infinity;
+        let beta = Infinity;
+
+        for (const m of legalMoves) {
+          const snap = this.cloneState();
+          this.applyMoveRaw(m);
+          const ev = alphaBeta(depth - 1, alpha, beta, !isMaximizing);
+          this.restoreState(snap);
+
+          if (isMaximizing) {
+            if (ev > bestScore) {
+              bestScore = ev;
+              bestMove = m;
+            }
+            if (ev > alpha) alpha = ev;
+          } else {
+            if (ev < bestScore) {
+              bestScore = ev;
+              bestMove = m;
+            }
+            if (ev < beta) beta = ev;
+          }
+        }
+
+        return { move: bestMove, score: bestScore, nodes };
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 5. GEMINI 2.5 FLASH GRANDMASTER API INTEGRATION
+    // --------------------------------------------------------------------------
+    async function queryGeminiChessMove(apiKey, engine) {
+      const fen = engine.getFEN();
+      const legalMoves = engine.generateLegalMoves(engine.turn);
+      const uciList = legalMoves.map(m =>
+        engine.coordToAlgebraic(m.from.r, m.from.c) +
+        engine.coordToAlgebraic(m.to.r, m.to.c) +
+        (m.promotion ? m.promotion.toLowerCase() : '')
+      );
+      const historySan = engine.history.map(h => h.san).join(' ');
+
+      const prompt = `You are a World Chess Grandmaster playing as ${engine.turn === 'w' ? 'White' : 'Black'}.
+Current FEN: ${fen}
+Move History (SAN): ${historySan || 'Opening Move (Move 1)'}
+Legal Moves (UCI): ${uciList.join(', ')}
+
+Select the strongest strategic move from the Legal Moves list above.
+Respond ONLY with valid JSON in this exact format:
+{"uci": "e2e4", "commentary": "Brief 1-sentence grandmaster insight on this move."}`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.35,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const parsed = JSON.parse(rawText);
+      const chosenUci = (parsed.uci || '').trim().toLowerCase();
+
+      const matchedMove = legalMoves.find(m => {
+        const u = engine.coordToAlgebraic(m.from.r, m.from.c) +
+                  engine.coordToAlgebraic(m.to.r, m.to.c) +
+                  (m.promotion ? m.promotion.toLowerCase() : '');
+        return u === chosenUci;
+      });
+
+      if (!matchedMove) {
+        throw new Error(`Gemini suggested invalid move "${chosenUci}"`);
+      }
+
+      return {
+        move: matchedMove,
+        commentary: parsed.commentary || `Gemini 2.5 Flash executes ${chosenUci}.`
+      };
+    }
+
+    // --------------------------------------------------------------------------
+    // 6. APPLICATION CONTROLLER & MASTERPIECE UI RENDERER
+    // --------------------------------------------------------------------------
+    const game = new ChessEngine();
+
+    const state = {
+      aiColor: 'w',          // AI moves 1st as White by default!
+      userColor: 'b',        // User plays Black by default
+      engineMode: 'minimax', // 'minimax' | 'gemini'
+      searchDepth: 3,
+      geminiApiKey: '',
+      selectedSquare: null,  // { r, c }
+      legalTargets: [],      // moves from selectedSquare
+      hintMove: null,        // { from, to }
+      isAiThinking: false,
+      pendingPromotion: null // { from, to, moves }
+    };
+
+    // DOM References
+    const boardEl = document.getElementById('chessboard');
+    const apiKeyInput = document.getElementById('geminiApiKeyInput');
+    const idbStatusText = document.getElementById('idbStatusText');
+    const aiCommentaryBox = document.getElementById('aiCommentaryBox');
+    const aiThinkingIndicator = document.getElementById('aiThinkingIndicator');
+    const turnStatusBanner = document.getElementById('turnStatusBanner');
+    const moveHistoryContainer = document.getElementById('moveHistoryContainer');
+    const fenDisplayInput = document.getElementById('fenDisplayInput');
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-950/95 border-emerald-400/50 text-emerald-200',
+        warn: 'bg-amber-950/95 border-amber-400/50 text-amber-200',
+        error: 'bg-rose-950/95 border-rose-400/50 text-rose-200',
+        info: 'bg-[#171a26]/95 border-amber-500/40 text-gray-100'
+      };
+      el.className = `px-4 py-2.5 rounded-xl border text-xs font-medium shadow-2xl backdrop-blur-md transition-all duration-300 ${colors[type] || colors.info}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        setTimeout(() => el.remove(), 300);
+      }, 3200);
+    }
+
+    // Render Board (Flips orientation automatically if User plays Black!)
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      const flipped = state.userColor === 'b';
+      const lastMove = game.history.length > 0 ? game.history[game.history.length - 1].move : null;
+      const inCheck = game.isInCheck(game.turn);
+      const kingPos = inCheck ? game.findKing(game.turn) : null;
+
+      for (let visualR = 0; visualR < 8; visualR++) {
+        for (let visualC = 0; visualC < 8; visualC++) {
+          const r = flipped ? 7 - visualR : visualR;
+          const c = flipped ? 7 - visualC : visualC;
+
+          const sq = document.createElement('div');
+          const isLight = (r + c) % 2 === 0;
+          sq.className = `chess-square ${isLight ? 'sq-light' : 'sq-dark'}`;
+          sq.dataset.r = r;
+          sq.dataset.c = c;
+
+          // Selected highlight
+          if (state.selectedSquare && state.selectedSquare.r === r && state.selectedSquare.c === c) {
+            sq.classList.add('sq-selected');
+          }
+
+          // Last move highlight
+          if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c))) {
+            sq.classList.add('sq-last-move');
+          }
+
+          // Hint highlight
+          if (state.hintMove && ((state.hintMove.from.r === r && state.hintMove.from.c === c) || (state.hintMove.to.r === r && state.hintMove.to.c === c))) {
+            sq.classList.add('sq-hint');
+          }
+
+          // King in check highlight
+          if (kingPos && kingPos.r === r && kingPos.c === c) {
+            sq.classList.add('sq-check');
+          }
+
+          // Rank & File Coordinates on edges
+          if (visualC === 0) {
+            const rankLabel = document.createElement('span');
+            rankLabel.className = 'absolute top-0.5 left-1 text-[10px] font-bold opacity-80 pointer-events-none select-none';
+            rankLabel.textContent = 8 - r;
+            sq.appendChild(rankLabel);
+          }
+          if (visualR === 7) {
+            const fileLabel = document.createElement('span');
+            fileLabel.className = 'absolute bottom-0.5 right-1 text-[10px] font-bold opacity-80 pointer-events-none select-none';
+            fileLabel.textContent = FILES[c];
+            sq.appendChild(fileLabel);
+          }
+
+          // Legal destination markers
+          const targetMove = state.legalTargets.find(m => m.to.r === r && m.to.c === c);
+          if (targetMove) {
+            if (targetMove.captured || game.board[r][c]) {
+              const ring = document.createElement('div');
+              ring.className = 'legal-capture-ring';
+              sq.appendChild(ring);
+            } else {
+              const dot = document.createElement('div');
+              dot.className = 'legal-dot';
+              sq.appendChild(dot);
+            }
+          }
+
+          // Piece SVG
+          const piece = game.board[r][c];
+          if (piece) {
+            const pWrap = document.createElement('div');
+            pWrap.className = 'piece-wrapper';
+            if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
+              pWrap.classList.add('piece-drop-anim');
+            }
+            pWrap.innerHTML = PIECE_SVGS[piece];
+            sq.appendChild(pWrap);
+          }
+
+          sq.addEventListener('click', () => handleSquareClick(r, c));
+          boardEl.appendChild(sq);
+        }
+      }
+
+      updateHUD();
+    }
+
+    function updateHUD() {
+      // Update FEN & Telemetry Stats
+      fenDisplayInput.value = game.getFEN();
+      const status = game.getGameStatus();
+      document.getElementById('statMoveCount').textContent = game.fullMoveNumber;
+      document.getElementById('statLegalMoves').textContent = status.legalCount ?? 0;
+
+      // Update Evaluation Bar
+      const rawEval = game.evaluateBoard();
+      const clamped = Math.max(-1000, Math.min(1000, rawEval));
+      const whitePct = 50 + (clamped / 1000) * 45;
+      document.getElementById('evalBarFill').style.height = `${whitePct}%`;
+      const evalDisplay = (rawEval / 100).toFixed(1);
+      document.getElementById('evalTopText').textContent = rawEval >= 0 ? `+${evalDisplay}` : evalDisplay;
+
+      // Update Turn Status Banner
+      if (status.over) {
+        turnStatusBanner.textContent = status.text;
+        turnStatusBanner.className = 'text-xs font-bold text-rose-400';
+      } else if (state.isAiThinking) {
+        turnStatusBanner.textContent = 'AI Sovereign Thinking...';
+        turnStatusBanner.className = 'text-xs font-semibold text-amber-300 thinking-pulse';
+      } else if (game.turn === state.userColor) {
+        turnStatusBanner.textContent = status.inCheck ? '⚠️ CHECK! Your Turn' : 'Your Turn to Move';
+        turnStatusBanner.className = status.inCheck ? 'text-xs font-bold text-rose-400' : 'text-xs font-semibold text-emerald-400';
+      } else {
+        turnStatusBanner.textContent = 'AI Turn';
+        turnStatusBanner.className = 'text-xs font-semibold text-amber-300';
+      }
+
+      // Captured Pieces & Material Calculation
+      const initialCounts = { P: 8, N: 2, B: 2, R: 2, Q: 1 };
+      const currentW = { P: 0, N: 0, B: 0, R: 0, Q: 0 };
+      const currentB = { P: 0, N: 0, B: 0, R: 0, Q: 0 };
+      let matW = 0, matB = 0;
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = game.board[r][c];
+          if (!p || p[1] === 'K') continue;
+          if (p[0] === 'w') { currentW[p[1]]++; matW += PIECE_VALUES[p[1]]; }
+          else { currentB[p[1]]++; matB += PIECE_VALUES[p[1]]; }
+        }
+      }
+
+      const capturedByWhite = []; // Black pieces lost
+      const capturedByBlack = []; // White pieces lost
+      for (const type of ['Q', 'R', 'B', 'N', 'P']) {
+        for (let i = 0; i < initialCounts[type] - currentB[type]; i++) capturedByWhite.push('b' + type);
+        for (let i = 0; i < initialCounts[type] - currentW[type]; i++) capturedByBlack.push('w' + type);
+      }
+
+      const topIsWhite = state.aiColor === 'w';
+      const topCaptured = topIsWhite ? capturedByWhite : capturedByBlack;
+      const bottomCaptured = topIsWhite ? capturedByBlack : capturedByWhite;
+
+      document.getElementById('topCapturedRow').innerHTML = topCaptured
+        .map(p => `<div class="w-4 h-4">${PIECE_SVGS[p]}</div>`).join('');
+      document.getElementById('bottomCapturedRow').innerHTML = bottomCaptured
+        .map(p => `<div class="w-4 h-4">${PIECE_SVGS[p]}</div>`).join('');
+
+      const diff = (matW - matB) / 100;
+      const topAdvEl = document.getElementById('topMaterialAdv');
+      const bottomAdvEl = document.getElementById('bottomMaterialAdv');
+      topAdvEl.textContent = '';
+      bottomAdvEl.textContent = '';
+      if (diff > 0) {
+        (topIsWhite ? topAdvEl : bottomAdvEl).textContent = `+${diff.toFixed(0)}`;
+      } else if (diff < 0) {
+        (topIsWhite ? bottomAdvEl : topAdvEl).textContent = `+${Math.abs(diff).toFixed(0)}`;
+      }
+
+      // Render Move History Table
+      renderMoveHistory();
+    }
+
+    function renderMoveHistory() {
+      if (game.history.length === 0) {
+        moveHistoryContainer.innerHTML = `<div class="text-gray-500 text-center py-8 italic">Awaiting opening move...</div>`;
+        return;
+      }
+      let html = '';
+      for (let i = 0; i < game.history.length; i += 2) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const wMove = game.history[i];
+        const bMove = game.history[i + 1];
+        html += `
+          <div class="grid grid-cols-12 items-center px-2 py-1 rounded hover:bg-white/5 ${i >= game.history.length - 2 ? 'bg-amber-500/10' : ''}">
+            <span class="col-span-2 text-gray-500">${moveNum}.</span>
+            <span class="col-span-5 text-amber-200 font-semibold">${wMove ? wMove.san : ''}</span>
+            <span class="col-span-5 text-gray-200">${bMove ? bMove.san : ''}</span>
+          </div>
+        `;
+      }
+      moveHistoryContainer.innerHTML = html;
+      moveHistoryContainer.scrollTop = moveHistoryContainer.scrollHeight;
+    }
+
+    // Handle Square Selection & Move Execution
+    function handleSquareClick(r, c) {
+      if (state.isAiThinking) return;
+      if (game.turn !== state.userColor) return;
+      const status = game.getGameStatus();
+      if (status.over) return;
+
+      // Check if clicking a valid target square for currently selected piece
+      const matchingMoves = state.legalTargets.filter(m => m.to.r === r && m.to.c === c);
+      if (matchingMoves.length > 0) {
+        // Pawn promotion check
+        if (matchingMoves.length > 1 && matchingMoves[0].promotion) {
+          openPromotionModal(matchingMoves);
+          return;
+        }
+        executeMoveAndTriggerAI(matchingMoves[0]);
+        return;
+      }
+
+      // Select own piece
+      const piece = game.board[r][c];
+      if (piece && piece[0] === state.userColor) {
+        state.selectedSquare = { r, c };
+        state.legalTargets = game.generateLegalMoves(state.userColor).filter(
+          m => m.from.r === r && m.from.c === c
+        );
+        state.hintMove = null;
+        renderBoard();
+      } else {
+        state.selectedSquare = null;
+        state.legalTargets = [];
+        renderBoard();
+      }
+    }
+
+    function openPromotionModal(promotionMoves) {
+      const modal = document.getElementById('promotionModal');
+      const choicesEl = document.getElementById('promotionChoices');
+      choicesEl.innerHTML = '';
+      const color = state.userColor;
+
+      for (const promoType of ['Q', 'R', 'B', 'N']) {
+        const move = promotionMoves.find(m => m.promotion === promoType);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'p-3 rounded-xl bg-[#191c28] hover:bg-amber-500/20 border border-amber-400/40 flex flex-col items-center gap-1 transition';
+        btn.innerHTML = `
+          <div class="w-12 h-12">${PIECE_SVGS[color + promoType]}</div>
+          <span class="text-[11px] font-bold text-amber-200">${{Q:'Queen',R:'Rook',B:'Bishop',N:'Knight'}[promoType]}</span>
+        `;
+        btn.onclick = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          executeMoveAndTriggerAI(move);
+        };
+        choicesEl.appendChild(btn);
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function playMoveAudio(moveRecord) {
+      const status = game.getGameStatus();
+      if (status.over) {
+        soundFX.play('gameover');
+      } else if (status.inCheck) {
+        soundFX.play('check');
+      } else if (moveRecord.move.isCastle) {
+        soundFX.play('castle');
+      } else if (moveRecord.move.captured) {
+        soundFX.play('capture');
+      } else {
+        soundFX.play('move');
+      }
+    }
+
+    function checkAndAnnounceGameOver() {
+      const status = game.getGameStatus();
+      if (!status.over) return false;
+
+      document.getElementById('gameOverTitle').textContent = status.reason;
+      document.getElementById('gameOverSubtitle').textContent = status.text;
+      const modal = document.getElementById('gameOverModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      aiCommentaryBox.textContent = `Match Concluded — ${status.text}`;
+      return true;
+    }
+
+    async function executeMoveAndTriggerAI(move) {
+      state.selectedSquare = null;
+      state.legalTargets = [];
+      state.hintMove = null;
+
+      const record = game.makeMove(move);
+      playMoveAudio(record);
+      renderBoard();
+
+      if (checkAndAnnounceGameOver()) return;
+
+      // Trigger AI response
+      if (game.turn === state.aiColor) {
+        await performAiTurn();
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 7. AI TURN ORCHESTRATOR (MOVES 1ST AUTOMATICALLY WHEN AI = WHITE)
+    // --------------------------------------------------------------------------
+    async function performAiTurn() {
+      if (game.turn !== state.aiColor) return;
+      const status = game.getGameStatus();
+      if (status.over) return;
+
+      state.isAiThinking = true;
+      aiThinkingIndicator.classList.remove('hidden');
+      updateHUD();
+
+      // Brief visual cadence so user perceives AI opening move smoothly
+      await new Promise(res => setTimeout(res, 420));
+
+      try {
+        let chosenMove = null;
+        let commentary = '';
+        let nodesEvaluated = 0;
+
+        if (state.engineMode === 'gemini' && state.geminiApiKey) {
+          aiCommentaryBox.textContent = '✨ Consulting Gemini 2.5 Flash Grandmaster neural model...';
+          try {
+            const gemRes = await queryGeminiChessMove(state.geminiApiKey, game);
+            chosenMove = gemRes.move;
+            commentary = `✨ Gemini 2.5 AI: ${gemRes.commentary}`;
+            nodesEvaluated = 'LLM';
+          } catch (gemErr) {
+            console.warn('Gemini fallback triggered:', gemErr);
+            showToast(`Gemini fallback to Minimax: ${gemErr.message}`, 'warn');
+            const fallback = game.findBestMoveMinimax(state.searchDepth);
+            chosenMove = fallback.move;
+            nodesEvaluated = fallback.nodes;
+            commentary = `⚡ Algorithmic Fallback (Depth ${state.searchDepth}): Executed ${chosenMove ? game.coordToAlgebraic(chosenMove.from.r, chosenMove.from.c) + '→' + game.coordToAlgebraic(chosenMove.to.r, chosenMove.to.c) : ''}.`;
+          }
+        } else {
+          const result = game.findBestMoveMinimax(state.searchDepth);
+          chosenMove = result.move;
+          nodesEvaluated = result.nodes;
+          const evalStr = (result.score / 100).toFixed(2);
+          commentary = result.commentary ||
+            `♟️ Minimax α-β (Depth ${state.searchDepth}): Evaluated ${nodesEvaluated.toLocaleString()} positions (Eval: ${result.score >= 0 ? '+' : ''}${evalStr}).`;
+        }
+
+        document.getElementById('statNodesEval').textContent =
+          typeof nodesEvaluated === 'number' ? nodesEvaluated.toLocaleString() : nodesEvaluated;
+
+        if (chosenMove) {
+          const record = game.makeMove(chosenMove);
+          aiCommentaryBox.textContent = `${commentary} [Played ${record.san}]`;
+          playMoveAudio(record);
+        }
+      } finally {
+        state.isAiThinking = false;
+        aiThinkingIndicator.classList.add('hidden');
+        renderBoard();
+        checkAndAnnounceGameOver();
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 8. SIDE SWITCHING, NEW GAME & INDEXEDDB VAULT UI HANDLERS
+    // --------------------------------------------------------------------------
+    function startNewMatch(aiPlaysWhite = true) {
+      game.reset();
+      state.selectedSquare = null;
+      state.legalTargets = [];
+      state.hintMove = null;
+      state.isAiThinking = false;
+
+      state.aiColor = aiPlaysWhite ? 'w' : 'b';
+      state.userColor = aiPlaysWhite ? 'b' : 'w';
+
+      // Update Player Banners & Badges
+      const aiFirstBtn = document.getElementById('aiFirstWhiteBtn');
+      const userFirstBtn = document.getElementById('userFirstWhiteBtn');
+      const aiFirstBadge = document.getElementById('aiFirstBadge');
+
+      if (aiPlaysWhite) {
+        aiFirstBtn.classList.add('border-amber-400', 'text-amber-300');
+        userFirstBtn.classList.remove('border-amber-400', 'text-amber-300');
+        aiFirstBadge.textContent = 'AI Moves 1st (White)';
+        document.getElementById('topPlayerColorBadge').textContent = 'WHITE (1st)';
+        document.getElementById('bottomPlayerColorBadge').textContent = 'BLACK (2nd)';
+        aiCommentaryBox.textContent = 'New Sovereign Match initiated. AI holds White and executes the opening move first...';
+      } else {
+        userFirstBtn.classList.add('border-amber-400', 'text-amber-300');
+        aiFirstBtn.classList.remove('border-amber-400', 'text-amber-300');
+        aiFirstBadge.textContent = 'You Move 1st (White)';
+        document.getElementById('topPlayerColorBadge').textContent = 'BLACK (2nd)';
+        document.getElementById('bottomPlayerColorBadge').textContent = 'WHITE (1st)';
+        aiCommentaryBox.textContent = 'You command the White pieces. Make your opening move to begin.';
+      }
+
+      document.getElementById('gameOverModal').classList.add('hidden');
+      document.getElementById('gameOverModal').classList.remove('flex');
+
+      renderBoard();
+
+      // Automatically trigger AI opening move when AI is White!
+      if (aiPlaysWhite) {
+        performAiTurn();
+      }
+    }
+
+    function setEngineMode(mode) {
+      state.engineMode = mode;
+      const minimaxBtn = document.getElementById('modeMinimaxBtn');
+      const geminiBtn = document.getElementById('modeGeminiBtn');
+      const badge = document.getElementById('activeEngineBadge');
+
+      if (mode === 'gemini') {
+        if (!state.geminiApiKey) {
+          showToast('Enter & Save your Gemini API Key in the top bar first!', 'warn');
+        }
+        geminiBtn.className = 'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all flex flex-col items-center gap-0.5 bg-amber-500/20 border-amber-400 text-amber-200';
+        minimaxBtn.className = 'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all flex flex-col items-center gap-0.5 bg-[#161923] border-amber-500/25 text-gray-300 hover:border-amber-400/60';
+        badge.textContent = 'Gemini 2.5 AI';
+        badge.className = 'text-[10px] font-mono-code px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/40';
+      } else {
+        minimaxBtn.className = 'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all flex flex-col items-center gap-0.5 bg-amber-500/20 border-amber-400 text-amber-200';
+        geminiBtn.className = 'px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all flex flex-col items-center gap-0.5 bg-[#161923] border-amber-500/25 text-gray-300 hover:border-amber-400/60';
+        badge.textContent = 'Minimax α-β';
+        badge.className = 'text-[10px] font-mono-code px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+      }
+    }
+
+    async function refreshSavedGamesUI() {
+      const listEl = document.getElementById('savedGamesList');
+      try {
+        const games = await vaultDB.getAllGames();
+        if (games.length === 0) {
+          listEl.innerHTML = `<p class="text-gray-500 text-[11px] italic">No archived matches in IndexedDB yet.</p>`;
+          return;
+        }
+        listEl.innerHTML = games.map(g => `
+          <div class="p-2 rounded-xl bg-[#10131c] border border-amber-500/20 flex items-center justify-between gap-2">
+            <div class="truncate">
+              <div class="font-semibold text-amber-200 truncate">${g.title}</div>
+              <div class="text-[10px] text-gray-400">${g.movesCount} plies • ${new Date(g.savedAt).toLocaleDateString()}</div>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button data-load-id="${g.id}" class="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 text-[10px] font-semibold">Load</button>
+              <button data-del-id="${g.id}" class="px-1.5 py-1 rounded bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 text-[10px]">✕</button>
+            </div>
+          </div>
+        `).join('');
+
+        listEl.querySelectorAll('[data-load-id]').forEach(btn => {
+          btn.onclick = async () => {
+            const id = Number(btn.dataset.loadId);
+            const all = await vaultDB.getAllGames();
+            const found = all.find(item => item.id === id);
+            if (found) {
+              game.reset();
+              for (const uci of found.uciMoves) {
+                const legal = game.generateLegalMoves(game.turn);
+                const m = legal.find(cand =>
+                  (game.coordToAlgebraic(cand.from.r, cand.from.c) +
+                   game.coordToAlgebraic(cand.to.r, cand.to.c) +
+                   (cand.promotion ? cand.promotion.toLowerCase() : '')) === uci
+                );
+                if (m) game.makeMove(m);
+              }
+              state.aiColor = found.aiColor || 'w';
+              state.userColor = found.userColor || 'b';
+              renderBoard();
+              showToast(`Loaded "${found.title}" from IndexedDB`, 'success');
+            }
+          };
+        });
+
+        listEl.querySelectorAll('[data-del-id]').forEach(btn => {
+          btn.onclick = async () => {
+            await vaultDB.deleteGame(Number(btn.dataset.delId));
+            refreshSavedGamesUI();
+            showToast('Archived match removed from IndexedDB', 'info');
+          };
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Event Listeners Wiring
+    document.getElementById('saveApiKeyBtn').addEventListener('click', async () => {
+      const key = apiKeyInput.value.trim();
+      if (!key) {
+        showToast('Please paste a valid Gemini API Key first.', 'warn');
+        return;
+      }
+      await vaultDB.saveSetting('gemini_api_key', key);
+      state.geminiApiKey = key;
+      idbStatusText.textContent = 'API Key Vaulted';
+      setEngineMode('gemini');
+      showToast('Gemini API Key securely saved to browser IndexedDB!', 'success');
+    });
+
+    document.getElementById('clearApiKeyBtn').addEventListener('click', async () => {
+      await vaultDB.deleteSetting('gemini_api_key');
+      apiKeyInput.value = '';
+      state.geminiApiKey = '';
+      idbStatusText.textContent = 'IndexedDB Ready';
+      setEngineMode('minimax');
+      showToast('Gemini API Key erased from IndexedDB.', 'info');
+    });
+
+    document.getElementById('toggleKeyVisibilityBtn').addEventListener('click', () => {
+      apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+    });
+
+    document.getElementById('modeMinimaxBtn').addEventListener('click', () => setEngineMode('minimax'));
+    document.getElementById('modeGeminiBtn').addEventListener('click', () => setEngineMode('gemini'));
+
+    document.getElementById('depthSlider').addEventListener('input', (e) => {
+      state.searchDepth = Number(e.target.value);
+      const labels = { 2: 'Depth 2 (Rapid)', 3: 'Depth 3 (Strong)', 4: 'Depth 4 (Master)' };
+      document.getElementById('depthLabel').textContent = labels[state.searchDepth];
+    });
+
+    document.getElementById('aiFirstWhiteBtn').addEventListener('click', () => startNewMatch(true));
+    document.getElementById('userFirstWhiteBtn').addEventListener('click', () => startNewMatch(false));
+    document.getElementById('newGameBtn').addEventListener('click', () => startNewMatch(state.aiColor === 'w'));
+    document.getElementById('modalNewGameBtn').addEventListener('click', () => startNewMatch(true));
+    document.getElementById('modalCloseBtn').addEventListener('click', () => {
+      document.getElementById('gameOverModal').classList.add('hidden');
+      document.getElementById('gameOverModal').classList.remove('flex');
+    });
+
+    document.getElementById('hintBtn').addEventListener('click', () => {
+      if (state.isAiThinking || game.turn !== state.userColor) return;
+      const best = game.findBestMoveMinimax(3);
+      if (best.move) {
+        state.hintMove = { from: best.move.from, to: best.move.to };
+        const fromAlg = game.coordToAlgebraic(best.move.from.r, best.move.from.c);
+        const toAlg = game.coordToAlgebraic(best.move.to.r, best.move.to.c);
+        aiCommentaryBox.textContent = `💡 Tactical Hint: Consider moving ${fromAlg.toUpperCase()} → ${toAlg.toUpperCase()}.`;
+        renderBoard();
+      }
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      if (state.isAiThinking || game.history.length === 0) return;
+      // Undo both AI move and User move so it stays User's turn
+      game.undoLastMove();
+      if (game.turn !== state.userColor && game.history.length > 0) {
+        game.undoLastMove();
+      }
+      state.selectedSquare = null;
+      state.legalTargets = [];
+      state.hintMove = null;
+      renderBoard();
+      showToast('Reverted previous turn.', 'info');
+    });
+
+    document.getElementById('soundToggleBtn').addEventListener('click', () => {
+      soundFX.enabled = !soundFX.enabled;
+      document.getElementById('soundIcon').textContent = soundFX.enabled ? '🔊' : '🔇';
+      document.getElementById('soundText').textContent = soundFX.enabled ? 'Audio On' : 'Muted';
+    });
+
+    document.querySelectorAll('.theme-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.setTheme;
+        document.body.dataset.theme = theme;
+        document.querySelectorAll('.theme-chip').forEach(c => {
+          c.classList.remove('border-amber-400', 'bg-amber-500/15', 'text-amber-200');
+          c.classList.add('border-white/10', 'bg-[#161923]', 'text-gray-300');
+        });
+        btn.classList.remove('border-white/10', 'bg-[#161923]', 'text-gray-300');
+        btn.classList.add('border-amber-400', 'bg-amber-500/15', 'text-amber-200');
+      });
+    });
+
+    document.getElementById('saveMatchBtn').addEventListener('click', async () => {
+      if (game.history.length === 0) {
+        showToast('Play at least one move before archiving!', 'warn');
+        return;
+      }
+      await vaultDB.saveGame({
+        title: `Match (${game.history.length} plies)`,
+        uciMoves: game.history.map(h => h.uci),
+        movesCount: game.history.length,
+        aiColor: state.aiColor,
+        userColor: state.userColor,
+        savedAt: Date.now()
+      });
+      await refreshSavedGamesUI();
+      showToast('Match saved to IndexedDB Vault!', 'success');
+    });
+
+    document.getElementById('copyPgnBtn').addEventListener('click', () => {
+      let pgn = '';
+      for (let i = 0; i < game.history.length; i += 2) {
+        pgn += `${Math.floor(i / 2) + 1}. ${game.history[i].san} ${game.history[i + 1] ? game.history[i + 1].san + ' ' : ''}`;
+      }
+      const temp = document.createElement('textarea');
+      temp.value = pgn.trim() || '*';
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      temp.remove();
+      showToast('PGN Move Ledger copied to clipboard!', 'success');
+    });
+
+    document.getElementById('copyFenBtn').addEventListener('click', () => {
+      fenDisplayInput.select();
+      document.execCommand('copy');
+      showToast('FEN string copied to clipboard!', 'success');
+    });
+
+    // --------------------------------------------------------------------------
+    // 9. BOOTSTRAP APPLICATION & HYDRATE FROM INDEXEDDB
+    // --------------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await vaultDB.open();
+        const storedKey = await vaultDB.getSetting('gemini_api_key');
+        if (storedKey) {
+          state.geminiApiKey = storedKey;
+          apiKeyInput.value = storedKey;
+          idbStatusText.textContent = 'API Key Loaded';
+          setEngineMode('gemini');
+        }
+        await refreshSavedGamesUI();
+      } catch (err) {
+        console.warn('IndexedDB initialization notice:', err);
+        idbStatusText.textContent = 'Local Session';
+      }
+
+      // Start immediately with AI moving 1st as White!
+      startNewMatch(true);
+    });
+  </script>
+</body>
+</html>
